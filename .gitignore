@@ -1,19 +1,59 @@
-# Logs
-logs/
-*.log
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
 
-# Database
-data/geo.db
+# Next.js
+/.next/
+/out/
 
-# Python cache
+# Production
+/build
+
+# Testing
+/coverage
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# OS files
+.DS_Store
+*.pem
+
+# Project Specific
+geo.db
+geo.db-journal
+/reports
+/data/*.db
+config/notify.json
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
+.venv/
+env/
+venv/
+ENV/
 
-# Reports (generated)
-reports/
-
-# Config with secrets
-config/notify.json
-
-.DS_Store
+# Logs
+logs
+*.log

@@ -1,8 +1,6 @@
 ---
 name: gsd-executor
 description: Executes GSD plans with atomic commits, deviation handling, checkpoint protocols, and state management. Spawned by execute-phase orchestrator or execute-plan command.
-skills:
-  - gsd-executor-workflow
 # hooks:
 #   PostToolUse:
 #     - matcher: "Write|Edit"

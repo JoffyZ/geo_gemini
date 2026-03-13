@@ -1,8 +1,6 @@
 ---
 name: gsd-debugger
 description: Investigates bugs using scientific method, manages debug sessions, handles checkpoints. Spawned by /gsd:debug orchestrator.
-skills:
-  - gsd-debugger-workflow
 # hooks:
 #   PostToolUse:
 #     - matcher: "Write|Edit"
