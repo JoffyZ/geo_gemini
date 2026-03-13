@@ -1,0 +1,21 @@
+{
+  "feishu": {
+    "webhook_url": "",
+    "app_id": "",
+    "app_secret": "",
+    "targets": [
+      {
+        "name": "GEO报告群",
+        "chat_id": "oc_ca3c110b00634571ceafede013362cf5",
+        "enabled": true,
+        "report_types": [
+          "weekly",
+          "brand_check"
+        ]
+      }
+    ],
+    "owner_openid": "ou_xxx",
+    "tenant_domain": "your-company"
+  },
+  "note": "webhook_url 和 app_id/app_secret 二选一。webhook 方式更简单，适合单群推送；app 方式支持多群。"
+}

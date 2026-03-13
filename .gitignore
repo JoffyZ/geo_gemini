@@ -1,0 +1,19 @@
+# Logs
+logs/
+*.log
+
+# Database
+data/geo.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Reports (generated)
+reports/
+
+# Config with secrets
+config/notify.json
+
+.DS_Store

@@ -1,0 +1,10 @@
+{
+  "permission": {
+    "read": {
+      "/Users/joffy/Site/geo/.opencode/get-shit-done/*": "allow"
+    },
+    "external_directory": {
+      "/Users/joffy/Site/geo/.opencode/get-shit-done/*": "allow"
+    }
+  }
+}
