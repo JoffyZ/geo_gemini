@@ -6,7 +6,7 @@ import { ioredisConnection } from '../redis'
  * Used for processing AI monitoring tasks asynchronously.
  */
 export const monitoringQueue = new Queue('monitoring-queue', {
-  connection: ioredisConnection,
+  connection: ioredisConnection as any, // Cast to any to avoid BullMQ internal ioredis type mismatch
   defaultJobOptions: {
     attempts: 5,
     backoff: {

@@ -2,7 +2,7 @@
 
 import { db } from '@/db';
 import { monitoringResults, prompts } from '@/db/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { classifyDomain, extractDomain, DomainCategory } from '@/lib/classification/domain-classifier';
 import { MonitoringResultSchema } from '@/lib/parser';
 
@@ -41,7 +41,6 @@ export async function getSourceAnalysis(filters: {
   countryCode?: string;
   categoryId?: string;
 }): Promise<SourceStats> {
-  // 1. Fetch relevant results
   const conditions = [eq(monitoringResults.tenantId, filters.tenantId)];
 
   if (filters.aiPlatform && filters.aiPlatform !== 'all') {
@@ -51,7 +50,6 @@ export async function getSourceAnalysis(filters: {
     conditions.push(eq(monitoringResults.countryCode, filters.countryCode));
   }
 
-  // Join with prompts to filter by category if categoryId is provided
   let query;
   if (filters.categoryId && filters.categoryId !== 'all') {
     query = db
@@ -75,10 +73,8 @@ export async function getSourceAnalysis(filters: {
   const domainCounts: Record<string, number> = {};
   let totalCitations = 0;
 
-  // 2. Extract and count domains
   for (const row of results) {
     try {
-      // row.content is already an object because of jsonb
       const parsed = MonitoringResultSchema.parse(row.content);
       for (const citation of parsed.citations) {
         const domain = extractDomain(citation.domain || citation.url);
@@ -86,42 +82,29 @@ export async function getSourceAnalysis(filters: {
         totalCitations++;
       }
     } catch (e) {
-      // console.error('Failed to parse content for citation analysis', e);
+      // Ignore parse errors
     }
   }
 
-  // 3. Classify and aggregate
   const domainList = Object.keys(domainCounts);
   const categoryCounts: Record<DomainCategory, number> = {
-    Media: 0,
-    Social: 0,
-    Forum: 0,
-    Blog: 0,
-    Corporate: 0,
-    Academic: 0,
-    Government: 0,
-    Other: 0,
+    Media: 0, Social: 0, Forum: 0, Blog: 0,
+    Corporate: 0, Academic: 0, Government: 0, Other: 0,
   };
 
-  // Classify in parallel (batch size of 5 to avoid overloading/rate limits)
   const sourceMetrics: SourceMetric[] = [];
-  const BATCH_SIZE = 10;
-  for (let i = 0; i < domainList.length; i += BATCH_SIZE) {
-    const batch = domainList.slice(i, i + BATCH_SIZE);
-    const classifications = await Promise.all(
-      batch.map(async (domain) => {
-        const category = await classifyDomain(domain);
-        return { domain, category, count: domainCounts[domain] };
-      })
-    );
-
-    for (const m of classifications) {
-      sourceMetrics.push(m);
-      categoryCounts[m.category] += m.count;
-    }
+  
+  /**
+   * CRITICAL: Use sequential processing to preserve database connection slots.
+   * Although it's slightly slower, it prevents "MaxClientsInSessionMode" errors.
+   */
+  for (const domain of domainList) {
+    const category = await classifyDomain(domain);
+    const metric = { domain, category, count: domainCounts[domain] };
+    sourceMetrics.push(metric);
+    categoryCounts[category] += metric.count;
   }
 
-  // Sort by count
   sourceMetrics.sort((a, b) => b.count - a.count);
 
   const categoryDistribution: CategoryData[] = Object.entries(categoryCounts)

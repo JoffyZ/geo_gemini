@@ -36,6 +36,7 @@ export async function getDashboardMetrics(filter: AnalyticsFilter) {
     conditions.push(inArray(brandMetricsDaily.aiPlatform, filter.platforms as any));
   }
 
+  // Drizzle select is one query
   return db.select({
     day: brandMetricsDaily.day,
     brandId: brandMetricsDaily.brandId,
@@ -56,7 +57,6 @@ export async function getDashboardMetrics(filter: AnalyticsFilter) {
 
 /**
  * Returns trend data formatted for Recharts.
- * Pivot: [{ date: '2024-01-01', 'Brand A': 45, 'Brand B': 30 }, ...]
  */
 export async function getTrendData(filter: AnalyticsFilter) {
   const rows = await getDashboardMetrics(filter);
@@ -87,7 +87,6 @@ export async function getTrendData(filter: AnalyticsFilter) {
   const trendData = Array.from(dataMap.values()).map(dayData => {
     const final: any = { date: dayData.date };
     Object.keys(dayData).forEach(key => {
-      // If it's a brand name (not date and not a suffix)
       if (key !== 'date' && !key.endsWith('_total') && !key.endsWith('_rank_sum') && !key.endsWith('_rank_count')) {
         const total = dayData[`${key}_total`];
         final[key] = total > 0 ? Number(((dayData[key] / total) * 100).toFixed(2)) : 0;
@@ -134,10 +133,12 @@ export async function getKPISummary(filter: AnalyticsFilter) {
     .where(and(...conditions));
   };
 
-  const [current, previous] = await Promise.all([
-    getAggregated(filter.dateRange.start, filter.dateRange.end),
-    getAggregated(prevRange.start, prevRange.end),
-  ]);
+  /**
+   * CRITICAL: SEQUENTIAL FETCHING ONLY.
+   * To prevent "MaxClientsInSessionMode" error on Supabase pooling.
+   */
+  const current = await getAggregated(filter.dateRange.start, filter.dateRange.end);
+  const previous = await getAggregated(prevRange.start, prevRange.end);
 
   const curr = current[0] || { totalMentions: 0, totalRankSum: 0, totalQueries: 0 };
   const prev = previous[0] || { totalMentions: 0, totalRankSum: 0, totalQueries: 0 };

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface DashboardFiltersProps {
   categories: { id: string; name: string }[];
@@ -39,8 +39,8 @@ export function DashboardFilters({ categories, countries, platforms }: Dashboard
     [searchParams]
   );
 
-  const handleFilterChange = (key: string, value: string | string[]) => {
-    const queryString = createQueryString({ [key]: value });
+  const handleFilterChange = (key: string, value: string | string[] | null) => {
+    const queryString = createQueryString({ [key]: (value as string) || undefined });
     startTransition(() => {
       router.push(`/dashboard?${queryString}`);
     });

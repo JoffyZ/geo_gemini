@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, TooltipProps } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useMemo } from 'react';
 
 interface TrendChartsProps {
@@ -27,13 +27,13 @@ export function TrendCharts({ data }: TrendChartsProps) {
     return keys.filter(k => k !== 'date' && !k.endsWith('_rank'));
   }, [data]);
 
-  const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border rounded-lg shadow-md p-3 text-xs">
           <p className="font-bold mb-1 border-b pb-1">{label}</p>
           <div className="space-y-1 mt-1">
-            {payload.map((entry, index) => (
+            {payload.map((entry: any, index: number) => (
               <div key={index} className="flex justify-between gap-4">
                 <span style={{ color: entry.color }} className="font-medium">
                   {entry.name}:
@@ -48,13 +48,13 @@ export function TrendCharts({ data }: TrendChartsProps) {
     return null;
   };
 
-  const RankTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  const RankTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border rounded-lg shadow-md p-3 text-xs">
           <p className="font-bold mb-1 border-b pb-1">{label}</p>
           <div className="space-y-1 mt-1">
-            {payload.map((entry, index) => (
+            {payload.map((entry: any, index: number) => (
               <div key={index} className="flex justify-between gap-4">
                 <span style={{ color: entry.color }} className="font-medium">
                   {entry.name?.replace('_rank', '')}:

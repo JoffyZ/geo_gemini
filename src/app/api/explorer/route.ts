@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Get adapter and query AI
+    // 1. Query AI platform via adapter
     const adapter = AdapterFactory.getAdapter(platform);
-    const rawResponse = await adapter.query(prompt, countryCode);
+    const { rawResponse } = await adapter.query(prompt, countryCode);
 
     // 2. Parse AI response into structured data
     const structuredData = await parseAIResponse(rawResponse, countryCode);

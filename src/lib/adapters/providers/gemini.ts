@@ -8,7 +8,7 @@ export class GeminiAdapter implements GeoAdapter {
   private readonly apiKey: string;
   private readonly model: string;
 
-  constructor(apiKey: string, model: string = "gemini-1.5-flash") {
+  constructor(apiKey: string, model: string = "gemini-2.5-flash") {
     this.apiKey = apiKey;
     this.model = model;
   }

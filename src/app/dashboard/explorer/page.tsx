@@ -58,7 +58,7 @@ export default function ExplorerPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="platform">AI Platform</Label>
-              <Select value={platform} onValueChange={setPlatform}>
+              <Select value={platform} onValueChange={(v) => setPlatform(v || "chatgpt")}>
                 <SelectTrigger id="platform">
                   <SelectValue placeholder="Select platform" />
                 </SelectTrigger>
@@ -72,7 +72,7 @@ export default function ExplorerPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="country">Target Country (Geo-Simulation)</Label>
-              <Select value={countryCode} onValueChange={setCountryCode}>
+              <Select value={countryCode} onValueChange={(v) => setCountryCode(v || "US")}>
                 <SelectTrigger id="country">
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>

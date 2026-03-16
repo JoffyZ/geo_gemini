@@ -29,10 +29,8 @@ export default async function CategoriesPage() {
         <h2 className="text-3xl font-bold tracking-tight">分类管理</h2>
         <div className="flex items-center space-x-2">
           <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> 新增分类
-              </Button>
+            <DialogTrigger render={<Button />}>
+              <Plus className="mr-2 h-4 w-4" /> 新增分类
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>

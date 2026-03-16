@@ -15,9 +15,9 @@ export function PromptFilters({ categories }: { categories: any[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams);
-    if (value === "all") {
+    if (value === "all" || value === null) {
       params.delete(key);
     } else {
       params.set(key, value);

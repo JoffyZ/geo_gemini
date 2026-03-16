@@ -44,10 +44,8 @@ export default async function PromptsPage({ searchParams }: PageProps) {
         <h2 className="text-3xl font-bold tracking-tight">问题库管理</h2>
         <div className="flex items-center space-x-2">
           <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary/5">
-                <Sparkles className="mr-2 h-4 w-4" /> AI 智能生成
-              </Button>
+            <DialogTrigger render={<Button variant="outline" className="border-primary text-primary hover:bg-primary/5" />}>
+              <Sparkles className="mr-2 h-4 w-4" /> AI 智能生成
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
@@ -61,10 +59,8 @@ export default async function PromptsPage({ searchParams }: PageProps) {
           </Dialog>
 
           <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> 新增问题
-              </Button>
+            <DialogTrigger render={<Button />}>
+              <Plus className="mr-2 h-4 w-4" /> 新增问题
             </DialogTrigger>
             <DialogContent className="sm:max-w-[525px]">
               <DialogHeader>

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL = "gemini-1.5-flash";
+const MODEL = "gemini-2.5-flash";
 
 export const GeneratedPromptSchema = z.object({
   content: z.string(),
@@ -43,7 +43,7 @@ export async function generateLocalizedPrompts({
   `;
 
   const expansionResult = await callGemini(expansionPrompt, countryName);
-  const expandedKeywords = expansionResult.split(',').map(k => k.trim());
+  const expandedKeywords = expansionResult.split(',').map((k: string) => k.trim());
 
   // 第二阶段：意图引导生成
   const generationPrompt = `

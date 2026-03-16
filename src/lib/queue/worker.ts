@@ -7,100 +7,86 @@ import { parseAIResponse } from '@/lib/parser'
 import { eq } from 'drizzle-orm'
 
 /**
- * BullMQ Monitoring Worker.
- * Listens for jobs in the 'monitoring-queue' and processes them.
+ * Main monitoring worker that processes AI query and parsing.
  */
 export const monitoringWorker = new Worker(
   'monitoring-queue',
   async (job: Job) => {
-    const { logId, prompt, platform, countryCode, tenantId, promptId } = job.data
+    const { promptId, tenantId, countryCode, platform } = job.data
     const startTime = Date.now()
 
+    // 1. Create a log entry
+    const [log] = await db.insert(monitoringLogs).values({
+      tenantId,
+      promptId,
+      aiPlatform: platform,
+      countryCode,
+      status: 'pending',
+    }).returning()
+
     try {
-      if (job.name === 'ai-monitoring') {
-        console.log(`[Worker] Processing job ${job.id} (Log: ${logId}) for platform: ${platform}`)
+      // 2. Execute AI Query
+      const adapter = AdapterFactory.getAdapter(platform)
+      
+      // Get prompt content
+      const [promptData] = await db.query.prompts.findMany({
+        where: (prompts, { eq }) => eq(prompts.id, promptId),
+        limit: 1
+      })
 
-        // Step 1: Update status to pending (already set by default, but ensuring correctness)
-        await db.update(monitoringLogs)
-          .set({ status: 'pending' })
-          .where(eq(monitoringLogs.id, logId))
+      if (!promptData) throw new Error('Prompt not found')
 
-        // Step 2: Query AI Adapter
-        const adapter = AdapterFactory.getAdapter(platform)
-        const { rawResponse } = await adapter.query(prompt, countryCode)
+      const { rawResponse } = await adapter.query(promptData.content, countryCode)
 
-        // Step 3: Parse AI Response
-        const structuredData = await parseAIResponse(rawResponse, countryCode)
+      // 3. Parse Result
+      const structuredData = await parseAIResponse(rawResponse, countryCode)
 
-        // Step 4: Store monitoring results
-        await db.insert(monitoringResults).values({
-          tenantId,
-          promptId,
-          logId,
-          aiPlatform: platform,
-          countryCode,
-          content: structuredData, // Structured JSON results (brands, citations)
-          rawResponse,
+      // 4. Save Result
+      await db.insert(monitoringResults).values({
+        tenantId,
+        promptId,
+        logId: log.id,
+        aiPlatform: platform,
+        countryCode,
+        content: structuredData,
+        rawResponse,
+      })
+
+      // 5. Update Log to Success
+      await db.update(monitoringLogs)
+        .set({
+          status: 'success',
+          durationMs: Date.now() - startTime,
         })
+        .where(eq(monitoringLogs.id, log.id))
 
-        // Step 5: Update log as success
-        const durationMs = Date.now() - startTime
-        await db.update(monitoringLogs)
-          .set({ 
-            status: 'success', 
-            durationMs,
-            errorMessage: null,
-            errorStack: null,
-          })
-          .where(eq(monitoringLogs.id, logId))
-
-        return { success: true, logId, durationMs }
-      }
-      
-      console.warn(`[Worker] Unknown job name: ${job.name}`)
-      return { success: false, error: 'Unknown job name' }
+      return { success: true }
     } catch (error: any) {
-      console.error(`[Worker] Error processing job ${job.id} (Log: ${logId}):`, error)
-      
-      const durationMs = Date.now() - startTime
-      
-      // Update log as failed
-      try {
-        await db.update(monitoringLogs)
-          .set({ 
-            status: 'failed', 
-            durationMs,
-            errorMessage: error.message || 'Unknown error',
-            errorStack: error.stack || null,
-          })
-          .where(eq(monitoringLogs.id, logId))
-      } catch (logError) {
-        console.error(`[Worker] Critical: Failed to update error log for ${logId}:`, logError)
-      }
+      console.error(`[Worker] Job ${job.id} failed:`, error)
 
-      throw error // Ensure BullMQ handles the retry based on backoff strategy
+      // Update Log to Failed
+      await db.update(monitoringLogs)
+        .set({
+          status: 'failed',
+          errorMessage: error.message,
+          errorStack: error.stack,
+          durationMs: Date.now() - startTime,
+        })
+        .where(eq(monitoringLogs.id, log.id))
+
+      throw error // Re-throw to trigger BullMQ retry
     }
   },
   {
-    connection: ioredisConnection,
+    connection: ioredisConnection as any,
     concurrency: 5,
-    autorun: true, // Start automatically when this file is loaded
     settings: {
-      backoffStrategies: {
-        adaptive: (attemptsMade: number, type: string, err: Error, job: Job) => {
-          // @ts-ignore: job.opts.backoff might be an object
-          const delay = typeof job.opts.backoff === 'object' ? job.opts.backoff?.delay || 2000 : 2000;
-          
-          // 如果错误消息包含速率限制相关词汇，使用更长的退避时间
-          const errorMessage = err?.message?.toLowerCase() || '';
-          if (errorMessage.includes('rate limit') || errorMessage.includes('429') || errorMessage.includes('too many requests')) {
-            return Math.pow(2, attemptsMade - 1) * 10000; // 10s, 20s, 40s...
-          }
-          
-          // 默认指数退避策略: 2s, 4s, 8s...
-          return Math.pow(2, attemptsMade - 1) * delay;
+      backoffStrategy: (attempts: number, type: string | undefined) => {
+        if (type === 'adaptive') {
+          return Math.pow(2, attempts) * 2000
         }
-      }
+        return 1000
+      },
     }
   }
 )

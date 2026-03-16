@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { getKPISummary, getTrendData } from '@/lib/actions/analytics';
 import { getSourceAnalysis } from '@/lib/actions/sources';
 import { DashboardFilters } from '@/components/dashboard/dashboard-filters';
@@ -7,7 +8,7 @@ import { SourceAnalysis } from '@/components/analytics/source-analysis';
 import { db } from '@/db';
 import { categories, brandMetricsDaily } from '@/db/schema';
 import { getTenantId } from '@/lib/auth';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -37,18 +38,20 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     countries: params.country && params.country !== 'all' ? [params.country] : undefined,
   };
 
-  // Parallel data fetching for summary, trends, and sources
-  const [summary, trendData, sourceData, filterOptions] = await Promise.all([
-    getKPISummary(filter),
-    getTrendData(filter),
-    getSourceAnalysis({ 
-      tenantId, 
-      aiPlatform: params.platform, 
-      countryCode: params.country, 
-      categoryId: params.category 
-    }),
-    getFilterOptions(tenantId),
-  ]);
+  /**
+   * CRITICAL: Sequential fetching ONLY.
+   * Supabase Transaction mode / Session mode has a very low pool size.
+   * Parallelizing these queries will trigger "MaxClientsInSessionMode" error.
+   */
+  const summary = await getKPISummary(filter);
+  const trendData = await getTrendData(filter);
+  const sourceData = await getSourceAnalysis({ 
+    tenantId, 
+    aiPlatform: params.platform, 
+    countryCode: params.country, 
+    categoryId: params.category 
+  });
+  const filterOptions = await getFilterOptions(tenantId);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -87,21 +90,20 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 }
 
 async function getFilterOptions(tenantId: string) {
-  const [catList, countryList, platformList] = await Promise.all([
-    db.select({ id: categories.id, name: categories.name })
+  // MUST BE SEQUENTIAL
+  const catList = await db.select({ id: categories.id, name: categories.name })
       .from(categories)
-      .where(eq(categories.tenantId, tenantId)),
+      .where(eq(categories.tenantId, tenantId));
     
-    db.select({ country: brandMetricsDaily.countryCode })
+  const countryList = await db.select({ country: brandMetricsDaily.countryCode })
       .from(brandMetricsDaily)
       .where(eq(brandMetricsDaily.tenantId, tenantId))
-      .groupBy(brandMetricsDaily.countryCode),
+      .groupBy(brandMetricsDaily.countryCode);
 
-    db.select({ platform: brandMetricsDaily.aiPlatform })
+  const platformList = await db.select({ platform: brandMetricsDaily.aiPlatform })
       .from(brandMetricsDaily)
       .where(eq(brandMetricsDaily.tenantId, tenantId))
-      .groupBy(brandMetricsDaily.aiPlatform),
-  ]);
+      .groupBy(brandMetricsDaily.aiPlatform);
 
   return {
     categories: catList,

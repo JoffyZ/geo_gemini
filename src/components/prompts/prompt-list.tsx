@@ -48,7 +48,7 @@ export function PromptList({ prompts }: { prompts: any[] }) {
                   <Badge variant="outline">{p.countryCode || "Global"}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={p.isActive ? "success" : "secondary"}>
+                  <Badge variant={p.isActive ? "default" : "secondary"}>
                     {p.isActive ? "活跃" : "禁用"}
                   </Badge>
                 </TableCell>

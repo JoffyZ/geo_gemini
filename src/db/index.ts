@@ -3,13 +3,33 @@ import postgres from 'postgres';
 import * as schema from './schema';
 
 /**
- * DATABASE_URL should be set in .env
- * For Supabase: postgresql://postgres:[PASSWORD]@db.[PROJECT_ID].supabase.co:5432/postgres
+ * Global singleton for the database client to prevent 
+ * "MaxClientsInSessionMode" errors during Next.js Hot Module Replacement (HMR).
  */
+
 const connectionString = process.env.DATABASE_URL!;
 
-// Use postgres-js for the database driver
-const client = postgres(connectionString);
+declare global {
+  // eslint-disable-next-line no-var
+  var postgresClient: postgres.Sql | undefined;
+}
 
-// Initialize Drizzle with the schema for better type safety
+// In development, we use a global variable so that the value
+// is preserved across module reloads caused by HMR.
+let client: postgres.Sql;
+
+if (process.env.NODE_ENV === 'production') {
+  client = postgres(connectionString, { prepare: false });
+} else {
+  if (!global.postgresClient) {
+    global.postgresClient = postgres(connectionString, { 
+      max: 1, 
+      prepare: false,
+      idle_timeout: 20, // Close idle connections quickly
+      connect_timeout: 10
+    });
+  }
+  client = global.postgresClient;
+}
+
 export const db = drizzle(client, { schema });

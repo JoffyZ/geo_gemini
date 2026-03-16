@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { deleteCategory } from "@/lib/actions/categories";
 import { Trash2, Pencil } from "lucide-react";
+import { format } from "date-fns";
 
 export function CategoryTable({ categories }: { categories: any[] }) {
   const handleDelete = async (id: string) => {
@@ -43,7 +44,7 @@ export function CategoryTable({ categories }: { categories: any[] }) {
                 <TableCell className="font-medium">{category.name}</TableCell>
                 <TableCell>{category.description || "-"}</TableCell>
                 <TableCell>
-                  {new Date(category.createdAt).toLocaleDateString()}
+                  {format(new Date(category.createdAt), "yyyy-MM-dd HH:mm")}
                 </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button variant="ghost" size="icon">
